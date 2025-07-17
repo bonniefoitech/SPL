@@ -15,7 +15,8 @@ import {
   Activity,
   Calendar,
   Target,
-  Zap
+  Zap,
+  Plus
 } from 'lucide-react'
 
 const AdminDashboard: React.FC = () => {

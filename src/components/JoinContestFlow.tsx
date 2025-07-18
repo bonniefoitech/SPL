@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useJoinContest, Contest, Team } from '../contexts/JoinContestContext'
+import { Contest, Team } from '../contexts/JoinContestContext'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
@@ -29,33 +29,37 @@ import toast from 'react-hot-toast'
 import { formatDistanceToNow } from 'date-fns'
 
 interface JoinContestFlowProps {
-  isOpen: boolean
-  onClose: () => void
   contest: Contest
+  onClose: () => void
+  onSuccess: () => void
 }
 
-const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, contest }) => {
+const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ contest, onClose, onSuccess }) => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { state, setStep, setContest, setSelectedTeam, setPaymentMethod, setLoading, setError, setTransactionId, resetFlow } = useJoinContest()
+  const [step, setStep] = useState(1)
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'add_money' | 'direct'>('wallet')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [transactionId, setTransactionId] = useState<string | null>(null)
   const [userTeams, setUserTeams] = useState<Team[]>([])
   const [walletBalance, setWalletBalance] = useState(12450) // Mock wallet balance
   const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
-    if (isOpen && contest) {
-      setContest(contest)
+    if (contest) {
       fetchUserTeams()
     }
-  }, [isOpen, contest])
+  }, [contest])
 
   useEffect(() => {
-    if (state.step === 4) {
+    if (step === 4) {
       setShowConfetti(true)
       const timer = setTimeout(() => setShowConfetti(false), 3000)
       return () => clearTimeout(timer)
     }
-  }, [state.step])
+  }, [step])
 
   const fetchUserTeams = async () => {
     if (!user) return
@@ -109,14 +113,14 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
   }
 
   const handleJoinContest = async () => {
-    if (!user || !state.selectedTeam) return
+    if (!user || !selectedTeam) return
 
     setLoading(true)
     setError(null)
 
     try {
       // Check wallet balance
-      if (state.paymentMethod === 'wallet' && walletBalance < contest.entry_fee) {
+      if (paymentMethod === 'wallet' && walletBalance < contest.entry_fee) {
         throw new Error('Insufficient wallet balance')
       }
 
@@ -129,7 +133,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
         .insert({
           contest_id: contest.id,
           user_id: user.id,
-          team_id: state.selectedTeam.id
+          team_id: selectedTeam.id
         })
 
       if (error) throw error
@@ -140,6 +144,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
       setStep(4)
 
       toast.success('Successfully joined contest!')
+      onSuccess()
     } catch (error: any) {
       if (error.code === '23505') {
         setError('You have already joined this contest')
@@ -157,7 +162,12 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
   }
 
   const handleClose = () => {
-    resetFlow()
+    setStep(1)
+    setSelectedTeam(null)
+    setPaymentMethod('wallet')
+    setLoading(false)
+    setError(null)
+    setTransactionId(null)
     onClose()
   }
 
@@ -177,8 +187,6 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
   const getPerformanceIcon = (change: number) => {
     return change >= 0 ? TrendingUp : TrendingDown
   }
-
-  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -214,11 +222,11 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
             {[1, 2, 3, 4].map((stepNumber) => (
               <div key={stepNumber} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
-                  state.step >= stepNumber
+                  step >= stepNumber
                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
                     : 'bg-white/10 text-slate-400'
                 }`}>
-                  {state.step > stepNumber ? (
+                  {step > stepNumber ? (
                     <CheckCircle className="w-4 h-4" />
                   ) : (
                     stepNumber
@@ -226,7 +234,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                 </div>
                 {stepNumber < 4 && (
                   <div className={`w-8 h-0.5 mx-2 transition-colors duration-300 ${
-                    state.step > stepNumber ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-white/10'
+                    step > stepNumber ? 'bg-gradient-to-r from-purple-600 to-blue-600' : 'bg-white/10'
                   }`} />
                 )}
               </div>
@@ -244,7 +252,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
         {/* Content */}
         <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
           {/* Step 1: Contest Selection (Info) */}
-          {state.step === 1 && (
+          {step === 1 && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="text-center">
                 <h2 className="text-2xl font-bold text-white mb-2">Join Contest</h2>
@@ -300,7 +308,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
           )}
 
           {/* Step 2: Team Selection */}
-          {state.step === 2 && (
+          {step === 2 && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="flex items-center justify-between">
                 <div>
@@ -397,7 +405,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
           )}
 
           {/* Step 3: Payment Confirmation */}
-          {state.step === 3 && state.selectedTeam && (
+          {step === 3 && selectedTeam && (
             <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="flex items-center justify-between">
                 <div>
@@ -423,7 +431,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-300">Team</span>
-                    <span className="text-white font-medium">{state.selectedTeam.name}</span>
+                    <span className="text-white font-medium">{selectedTeam.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-300">Entry Fee</span>
@@ -454,8 +462,8 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                         type="radio"
                         name="payment"
                         value="wallet"
-                        checked={state.paymentMethod === 'wallet'}
-                        onChange={(e) => setPaymentMethod(e.target.value as any)}
+                        checked={paymentMethod === 'wallet'}
+                        onChange={(e) => setPaymentMethod(e.target.value as 'wallet' | 'add_money' | 'direct')}
                         className="w-4 h-4 text-purple-600"
                       />
                       <Wallet className="w-5 h-5 text-emerald-400" />
@@ -475,8 +483,8 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                         type="radio"
                         name="payment"
                         value="add_money"
-                        checked={state.paymentMethod === 'add_money'}
-                        onChange={(e) => setPaymentMethod(e.target.value as any)}
+                        checked={paymentMethod === 'add_money'}
+                        onChange={(e) => setPaymentMethod(e.target.value as 'wallet' | 'add_money' | 'direct')}
                         className="w-4 h-4 text-purple-600"
                       />
                       <Plus className="w-5 h-5 text-blue-400" />
@@ -491,8 +499,8 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                         type="radio"
                         name="payment"
                         value="direct"
-                        checked={state.paymentMethod === 'direct'}
-                        onChange={(e) => setPaymentMethod(e.target.value as any)}
+                        checked={paymentMethod === 'direct'}
+                        onChange={(e) => setPaymentMethod(e.target.value as 'wallet' | 'add_money' | 'direct')}
                         className="w-4 h-4 text-purple-600"
                       />
                       <CreditCard className="w-5 h-5 text-purple-400" />
@@ -517,14 +525,14 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
               </div>
 
               {/* Error Display */}
-              {state.error && (
+              {error && (
                 <div className="bg-red-500/10 border border-red-400/30 rounded-xl p-4">
-                  <p className="text-red-400 text-sm">{state.error}</p>
+                  <p className="text-red-400 text-sm">{error}</p>
                 </div>
               )}
 
               {/* Insufficient Balance Warning */}
-              {state.paymentMethod === 'wallet' && walletBalance < contest.entry_fee && (
+              {paymentMethod === 'wallet' && walletBalance < contest.entry_fee && (
                 <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl p-4">
                   <p className="text-amber-400 text-sm">
                     Insufficient wallet balance. Please add money or choose a different payment method.
@@ -534,10 +542,10 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
 
               <button
                 onClick={handleJoinContest}
-                disabled={state.isLoading || (state.paymentMethod === 'wallet' && walletBalance < contest.entry_fee)}
+                disabled={loading || (paymentMethod === 'wallet' && walletBalance < contest.entry_fee)}
                 className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold py-4 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
               >
-                {state.isLoading ? (
+                {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
                     Processing...
@@ -553,7 +561,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
           )}
 
           {/* Step 4: Success */}
-          {state.step === 4 && (
+          {step === 4 && (
             <div className="text-center space-y-6 animate-in slide-in-from-right-4 duration-300">
               <div className="relative">
                 <div className="w-20 h-20 bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
@@ -576,7 +584,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-300">Transaction ID</span>
-                    <span className="text-white font-mono">{state.transactionId}</span>
+                    <span className="text-white font-mono">{transactionId}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-300">Contest</span>
@@ -584,7 +592,7 @@ const JoinContestFlow: React.FC<JoinContestFlowProps> = ({ isOpen, onClose, cont
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-300">Team</span>
-                    <span className="text-white">{state.selectedTeam?.name}</span>
+                    <span className="text-white">{selectedTeam?.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-300">Amount Paid</span>

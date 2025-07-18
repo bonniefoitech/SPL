@@ -21,30 +21,28 @@ export interface UserTeam {
 }
 
 export interface ContestDetails {
-  contest: {
-    id: string
-    title: string
-    description: string
-    entry_fee: number
-    prize_pool: number
-    max_participants: number
-    current_participants: number
-    contest_type: 'head-to-head' | 'tournament' | 'mega-contest'
-    start_time: string
-    end_time: string
-    status: 'upcoming' | 'live' | 'completed' | 'cancelled'
-    created_by: string
-    created_at: string
-    updated_at: string
-    difficulty?: 'beginner' | 'intermediate' | 'advanced'
-    featured?: boolean
-    entry_fee_breakdown?: {
-      platform_fee: number
-      prize_pool_contribution: number
-      taxes?: number
-    }
-    is_favorited?: boolean
+  id: string
+  title: string
+  description: string
+  entry_fee: number
+  prize_pool: number
+  max_participants: number
+  current_participants: number
+  contest_type: 'head-to-head' | 'tournament' | 'mega-contest'
+  start_time: string
+  end_time: string
+  status: 'upcoming' | 'live' | 'completed' | 'cancelled'
+  created_by: string
+  created_at: string
+  updated_at: string
+  difficulty?: 'beginner' | 'intermediate' | 'advanced'
+  featured?: boolean
+  entry_fee_breakdown?: {
+    platform_fee: number
+    prize_pool_contribution: number
+    taxes?: number
   }
+  is_favorited?: boolean
   rules: ContestRule[]
   prize_distribution: PrizeDistribution[]
   user_teams: UserTeam[]
@@ -72,16 +70,49 @@ export class ContestDetailService {
       const { data: user } = await supabase.auth.getUser()
       const userId = user?.user?.id
 
-      const { data, error } = await supabase.rpc(
-        'get_contest_details',
-        { 
-          p_contest_id: contestId,
-          p_user_id: userId || null
-        }
-      )
+      // Get contest details
+      const { data: contest, error: contestError } = await supabase
+        .from('contests')
+        .select('*')
+        .eq('id', contestId)
+        .single()
 
-      if (error) throw error
-      return data as ContestDetails
+      if (contestError) throw contestError
+
+      // Get contest rules
+      const { data: rules, error: rulesError } = await supabase
+        .from('contest_rules')
+        .select('*')
+        .eq('contest_id', contestId)
+        .order('rule_order')
+
+      // Get prize distribution
+      const { data: prizeDistribution, error: prizeError } = await supabase
+        .from('prize_distributions')
+        .select('*')
+        .eq('contest_id', contestId)
+        .order('rank')
+
+      // Check if user has joined
+      let isJoined = false
+      if (userId) {
+        const { data: participation } = await supabase
+          .from('contest_participants')
+          .select('id')
+          .eq('contest_id', contestId)
+          .eq('user_id', userId)
+          .single()
+        
+        isJoined = !!participation
+      }
+
+      return {
+        ...contest,
+        rules: rules || [],
+        prize_distribution: prizeDistribution || [],
+        user_teams: [], // Mock empty for now
+        is_joined: isJoined
+      } as ContestDetails
     } catch (error) {
       console.error('Error fetching contest details:', error)
       return null
@@ -136,7 +167,7 @@ export class ContestDetailService {
   /**
    * Join a contest with a team
    */
-  static async joinContest(contestId: string, teamId: string): Promise<{ success: boolean; error?: string }> {
+  static async joinContest(contestId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user) {
@@ -174,25 +205,12 @@ export class ContestDetailService {
         return { success: false, error: 'You have already joined this contest' }
       }
 
-      // Check if team exists and belongs to user
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .select('id')
-        .eq('id', teamId)
-        .eq('user_id', user.user.id)
-        .single()
-
-      if (teamError) {
-        return { success: false, error: 'Team not found or does not belong to you' }
-      }
-
       // Join the contest
       const { error: joinError } = await supabase
         .from('contest_participants')
         .insert({
           contest_id: contestId,
-          user_id: user.user.id,
-          team_id: teamId
+          user_id: user.user.id
         })
 
       if (joinError) {
@@ -212,55 +230,33 @@ export class ContestDetailService {
   /**
    * Switch team for a contest
    */
-  static async switchTeam(contestId: string, teamId: string): Promise<{ success: boolean; error?: string }> {
+  static async getUserTeamForContest(contestId: string): Promise<any> {
     try {
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user) {
-        return { success: false, error: 'User not authenticated' }
+        return null
       }
 
-      // Check if contest exists and is upcoming
-      const { data: contest, error: contestError } = await supabase
-        .from('contests')
-        .select('status')
+      // Get user's team for this contest
+      const { data: participation, error } = await supabase
+        .from('contest_participants')
+        .select('team_id')
         .eq('id', contestId)
         .single()
 
       if (contestError) {
-        return { success: false, error: 'Contest not found' }
       }
+      if (error) return null
 
-      if (contest.status !== 'upcoming') {
-        return { success: false, error: 'Cannot change team after contest has started' }
+      // Return mock team data for now
+      return {
+        id: participation?.team_id || 'mock-team',
+        name: 'My Team',
+        stocks: []
       }
-
-      // Check if team exists and belongs to user
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .select('id')
-        .eq('id', teamId)
-        .eq('user_id', user.user.id)
-        .single()
-
-      if (teamError) {
-        return { success: false, error: 'Team not found or does not belong to you' }
-      }
-
-      // Update the participant record
-      const { error: updateError } = await supabase
-        .from('contest_participants')
-        .update({ team_id: teamId })
-        .eq('contest_id', contestId)
-        .eq('user_id', user.user.id)
-
-      if (updateError) {
-        throw updateError
-      }
-
-      return { success: true }
     } catch (error) {
-      console.error('Error switching team:', error)
-      return { success: false, error: 'Failed to switch team' }
+      console.error('Error fetching user team:', error)
+      return null
     }
   }
 }

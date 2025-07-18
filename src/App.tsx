@@ -4,10 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { JoinContestProvider } from './contexts/JoinContestContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminRoute from './components/AdminRoute';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
-import AdminLogin from './pages/AdminLogin';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
@@ -17,7 +15,6 @@ import Stocks from './pages/Stocks';
 import Contests from './pages/Contests';
 import CreateTeam from './pages/CreateTeam';
 import ContestDetails from './pages/ContestDetails';
-import AdminDashboard from './pages/AdminDashboard';
 import Leaderboard from './pages/Leaderboard';
 import Analytics from './pages/Analytics';
 import LiveContest from './pages/LiveContest';
@@ -46,7 +43,6 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route
@@ -103,14 +99,6 @@ const App: React.FC = () => {
                   <ProtectedRoute>
                     <ContestDetails />
                   </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
                 }
               />
               <Route

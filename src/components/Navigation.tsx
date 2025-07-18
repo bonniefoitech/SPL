@@ -8,7 +8,7 @@ import {
 import toast from 'react-hot-toast'
 
 const Navigation: React.FC = () => {
-  const { user, userRole, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -77,21 +77,6 @@ const Navigation: React.FC = () => {
                 </Link>
               )
             })}
-            
-            {/* Admin Dashboard Link (only for admins) */}
-            {user && userRole === 'admin' && (
-              <Link
-                to="/admin"
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
-                  isActive('/admin')
-                    ? 'bg-gradient-to-r from-purple-600/20 to-blue-600/20 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <Shield className="w-4 h-4" />
-                Admin
-              </Link>
-            )}
           </div>
 
           {/* User Menu */}
@@ -119,11 +104,6 @@ const Navigation: React.FC = () => {
                 </div>
                 <span className="hidden sm:flex items-center gap-2 font-medium">
                   {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-                  {userRole === 'admin' && (
-                    <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full">
-                      Admin
-                    </span>
-                  )}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -205,22 +185,6 @@ const Navigation: React.FC = () => {
                   </>
                 )
               })}
-              
-              {/* Admin Dashboard Link (only for admins) */}
-              {userRole === 'admin' && (
-                <Link
-                  to="/admin"
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
-                    isActive('/admin')
-                      ? 'bg-gradient-to-r from-purple-600/20 to-blue-600/20 text-white'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Shield className="w-5 h-5" />
-                  Admin
-                </Link>
-              )}
               
               {/* Mobile Wallet Balance */}
               <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-lg border border-emerald-400/30 mx-4 mt-4">

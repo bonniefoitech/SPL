@@ -9,11 +9,9 @@ interface AuthProviderOptions {
 interface AuthContextType {
   user: User | null
   session: Session | null
-  userRole: string | null
   loading: boolean
   signUp: (email: string, password: string, fullName: string) => Promise<any>
   signIn: (email: string, password: string) => Promise<any>
-  signInAsAdmin: (email: string, password: string) => Promise<any>
   signInWithGoogle: (options?: AuthProviderOptions) => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<any>
@@ -32,7 +30,6 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [userRole, setUserRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -40,14 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
-      
-      // Check if user is admin
-      if (session?.user) {
-        getUserRole(session.user.id)
-      } else {
-        setUserRole(null)
-        setLoading(false)
-      }
+      setLoading(false)
     })
 
     // Listen for auth changes
@@ -56,39 +46,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      
-      // Check if user is admin
-      if (session?.user) {
-        getUserRole(session.user.id)
-      } else {
-        setUserRole(null)
-        setLoading(false)
-      }
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
   }, [])
-  
-  const getUserRole = async (userId: string) => {
-    try {
-      // Get user details
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      
-      if (userError) throw userError
-      
-      // Check if user is admin (admin@spl.com)
-      const isAdmin = userData.user?.email === 'admin@spl.com' || 
-                     userData.user?.email?.endsWith('@admin.spl.com') ||
-                     userData.user?.user_metadata?.is_admin === true
-      
-      setUserRole(isAdmin ? 'admin' : 'user')
-    } catch (error) {
-      console.error('Error getting user role:', error)
-      setUserRole('user') // Default to user role if error
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const { data, error } = await supabase.auth.signUp({
@@ -108,31 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
     })
-    return { data, error }
-  }
-
-  const signInAsAdmin = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    
-    if (!error && data.user) {
-      // Verify this user is an admin and set role immediately
-      const isAdmin = data.user.email === 'admin@spl.com' || 
-                     data.user.email.endsWith('@admin.spl.com') ||
-                     data.user.user_metadata?.is_admin === true
-      
-      if (!isAdmin) {
-        // Sign out if not admin
-        await supabase.auth.signOut()
-        return { data: null, error: { message: 'Unauthorized: Admin access required' } }
-      } else {
-        // Set admin role immediately to ensure proper redirection
-        setUserRole('admin')
-      }
-    }
-    
     return { data, error }
   }
 
@@ -167,11 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     user,
     session,
-    userRole,
     loading,
     signUp,
     signIn,
-    signInAsAdmin,
     signInWithGoogle,
     signOut,
     resetPassword,

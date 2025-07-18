@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, userRole, loading } = useAuth()
+  const { user, loading } = useAuth()
 
   if (loading) {
     return <LoadingSpinner />
@@ -18,9 +18,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />
   }
 
-  if (userRole === 'admin') {
-    return <Navigate to="/admin" replace />
-  }
   return <>{children}</>
 }
 

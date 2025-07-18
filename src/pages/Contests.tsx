@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navigation from '../components/Navigation'
-import ContestCreationForm from '../components/ContestCreationForm'
 import JoinContestFlow from '../components/JoinContestFlow'
 import { ContestService, Contest, ContestFilterOptions, ContestTag } from '../services/contestService'
 import { 
@@ -37,7 +36,6 @@ const Contests: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [joinedContests, setJoinedContests] = useState<string[]>([])
-  const [showCreateForm, setShowCreateForm] = useState(false)
   const [showJoinFlow, setShowJoinFlow] = useState(false)
   const [selectedContest, setSelectedContest] = useState<Contest | null>(null)
   const [contestTags, setContestTags] = useState<ContestTag[]>([])
@@ -464,38 +462,22 @@ const Contests: React.FC = () => {
               Join exciting trading competitions and win amazing prizes
             </p>
           </div>
-          
-          <button
-            onClick={() => {
-              if (user && userRole === 'admin') {
-                setShowCreateForm(true)
-              } else {
-                toast.error('Only admins can create contests')
-              }
-            }}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-600 hover:to-blue-600 transition-all duration-300 flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Create Contest
-          </button>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="lg:w-1/4">
             <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-6 sticky top-6">
-              {!user?.is_admin && (
-                <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-4 mb-6">
-                  <div className="flex items-start gap-2">
-                    <Calendar className="w-5 h-5 text-amber-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-amber-400 mb-1">Contest Schedule</h4>
-                      <p className="text-amber-300/80 text-sm">
-                        Team building ends at 9:00 AM on contest day. Results will be available after 3:30 PM.
-                      </p>
-                    </div>
+              <div className="bg-amber-500/10 border border-amber-400/30 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-2">
+                  <Calendar className="w-5 h-5 text-amber-400 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-amber-400 mb-1">Contest Schedule</h4>
+                    <p className="text-amber-300/80 text-sm">
+                      Team building ends at 9:00 AM on contest day. Results will be available after 3:30 PM.
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
               
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Filters</h3>
@@ -715,16 +697,6 @@ const Contests: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {showCreateForm && (
-        <ContestCreationForm
-          onClose={() => setShowCreateForm(false)}
-          onSuccess={() => {
-            setShowCreateForm(false)
-            fetchContests()
-          }}
-        />
-      )}
 
       {showJoinFlow && selectedContest && (
         <JoinContestFlow

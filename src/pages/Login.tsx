@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import FloatingInput from '../components/FloatingInput'
 import SocialButton from '../components/SocialButton'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Loader2, Shield } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('')
@@ -184,15 +184,6 @@ const Login: React.FC = () => {
                 Sign up
               </Link>
             </p>
-            <div className="mt-4 text-center">
-              <Link
-                to="/admin/login"
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors duration-200 inline-flex items-center gap-2"
-              >
-                <Shield className="w-4 h-4" />
-                Are you an Admin?
-              </Link>
-            </div>
           </div>
         </div>
       </div>

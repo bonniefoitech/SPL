@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navigation from '../components/Navigation'
-import ContestCreationForm from '../components/ContestCreationForm'
 import JoinContestFlow from '../components/JoinContestFlow'
 import { ContestService, Contest, ContestFilterOptions, ContestTag } from '../services/contestService'
 import { 
@@ -36,7 +35,6 @@ const Contests: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [joinedContests, setJoinedContests] = useState<string[]>([])
-  const [showCreateForm, setShowCreateForm] = useState(false)
   const [showJoinFlow, setShowJoinFlow] = useState(false)
   const [selectedContest, setSelectedContest] = useState<Contest | null>(null)
   const [contestTags, setContestTags] = useState<ContestTag[]>([])
@@ -443,14 +441,6 @@ const Contests: React.FC = () => {
               Join exciting trading competitions and win amazing prizes
             </p>
           </div>
-          
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-600 hover:to-blue-600 transition-all duration-300 flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Create Contest
-          </button>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -674,16 +664,6 @@ const Contests: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {showCreateForm && (
-        <ContestCreationForm
-          onClose={() => setShowCreateForm(false)}
-          onSuccess={() => {
-            setShowCreateForm(false)
-            fetchContests()
-          }}
-        />
-      )}
 
       {showJoinFlow && selectedContest && (
         <JoinContestFlow

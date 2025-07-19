@@ -5,7 +5,7 @@ export interface Notification {
   user_id: string
   title: string
   message: string
-  type: 'general' | 'contest' | 'achievement' | 'payment' | 'system'
+  type: 'general' | 'contest' | 'achievement' | 'payment'
   is_read: boolean
   link?: string
   created_at: string

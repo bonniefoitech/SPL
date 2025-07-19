@@ -153,6 +153,29 @@ export class ContestService {
   }
 
   /**
+   * Create a new contest tag (available to all authenticated users)
+   */
+  static async createContestTag(name: string, description: string, color: string = 'blue'): Promise<ContestTag | null> {
+    try {
+      const { data, error } = await supabase
+        .from('contest_tags')
+        .insert({
+          name,
+          description,
+          color
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      return data as ContestTag
+    } catch (error) {
+      console.error('Error creating contest tag:', error)
+      return null
+    }
+  }
+
+  /**
    * Toggle favorite status for a contest
    */
   static async toggleFavorite(contestId: string): Promise<boolean> {

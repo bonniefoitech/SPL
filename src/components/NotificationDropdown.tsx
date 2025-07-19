@@ -110,7 +110,7 @@ const NotificationDropdown: React.FC = () => {
       case 'contest': return Trophy
       case 'payment': return DollarSign
       case 'achievement': return Gift
-      case 'system': return AlertCircle
+      case 'general': return AlertCircle
       default: return Users
     }
   }
@@ -120,7 +120,7 @@ const NotificationDropdown: React.FC = () => {
       case 'contest': return 'from-purple-400 to-pink-500'
       case 'payment': return 'from-emerald-400 to-green-500'
       case 'achievement': return 'from-amber-400 to-orange-500'
-      case 'system': return 'from-red-400 to-pink-500'
+      case 'general': return 'from-blue-400 to-cyan-500'
       default: return 'from-blue-400 to-cyan-500'
     }
   }

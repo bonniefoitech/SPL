@@ -169,15 +169,64 @@ export class ScoringEngine {
    */
   static async calculateGlobalRankings(timeframe: 'daily' | 'weekly' | 'monthly' = 'weekly'): Promise<void> {
     try {
-      // Get all auth users (since we don't have a users table)
-      // This is a simplified approach - in production you'd want a proper users table
-      const { data: { users }, error } = await supabase.auth.admin.listUsers()
+      // Get user performance data from contest participants and scoring
+      const { data: userPerformances, error } = await supabase
+        .from('contest_participants')
+        .select(`
+          user_id,
+          final_points,
+          final_rank,
+          prize_won
+        `)
+        .not('final_points', 'is', null)
 
       if (error) throw error
 
-      // Calculate performance for each user
       const stockPerformances = await this.getCurrentStockPerformances()
-      const userPerformances = users.map(user => {
+      
+      // Aggregate user performance data
+      const aggregatedPerformances = userPerformances.reduce((acc, participant) => {
+        const userId = participant.user_id
+        if (!acc[userId]) {
+          acc[userId] = {
+            userId,
+            username: `Player ${userId.slice(0, 8)}`,
+            avatar: null,
+            totalPoints: 0,
+            totalEarnings: 0,
+            contestsWon: 0,
+            totalContests: 0,
+            winRate: 0
+          }
+        }
+        
+        acc[userId].totalPoints += participant.final_points || 0
+        acc[userId].totalEarnings += participant.prize_won || 0
+        acc[userId].totalContests += 1
+        if (participant.final_rank === 1) {
+          acc[userId].contestsWon += 1
+        }
+        
+        return acc
+      }, {} as Record<string, any>)
+
+      const performanceArray = Object.values(aggregatedPerformances).map((user: any) => {
+        user.winRate = user.totalContests > 0 ? (user.contestsWon / user.totalContests) * 100 : 0
+        return user
+      })
+
+      // Sort by total points and assign ranks
+      performanceArray.sort((a, b) => b.totalPoints - a.totalPoints)
+      
+      console.log('Global rankings calculated:', performanceArray)
+
+    } catch (error) {
+      console.error('Error calculating global rankings:', error)
+      throw error
+    }
+  }
+}
+
         let totalPoints = 0
         let totalEarnings = 0
         let contestsWon = 0

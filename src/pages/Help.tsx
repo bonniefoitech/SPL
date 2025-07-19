@@ -112,7 +112,7 @@ const Help: React.FC = () => {
     { id: 'scoring', name: 'Scoring & Rules', icon: Star },
     { id: 'payments', name: 'Payments & Wallet', icon: Shield },
     { id: 'contests', name: 'Contests', icon: Users },
-    { id: 'technical', name: 'Technical Issues', icon: AlertCircle }
+    { id: 'general', name: 'General Questions', icon: AlertCircle }
   ]
 
   const videoTutorials = [
